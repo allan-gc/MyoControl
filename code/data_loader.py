@@ -217,6 +217,7 @@ if __name__ == '__main__':
     parser.add_argument('--gest_dict', '-gestures', type=str)
     parser.add_argument('--csv_path', '-c', type=str)
     parser.add_argument('--npy_path', '-n', type=str)
+     ### ./data_loader.py -g t -gestures '{"E1": [0,2,3], "E2": [4,5]}' ###
     args = parser.parse_args()
     data = json.loads(args.gest_dict)
     key_list = list(data.keys())

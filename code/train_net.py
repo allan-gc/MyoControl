@@ -18,20 +18,19 @@ from semg_network import Network, Network_enhanced, Network_XL
 from data_loader import SEMG_Dataset
 
 
-
 class Trainer():
     '''This class is used to train and test neural networks, plot the models performance throughout training and save useful statistics'''
-    def __init__(self,model,optimizer,criterion,device,data_path,loader_params,file=None,scheduler=None,epochs=100,early_stop=False):
-     '''ARGS: model: class object of the pytorch model to train
-              optimizer: pytorch optim object for the eoptimization algorithm to use (Ex: SDG, AdamW)
-              criterion: pytorch loss function object such as MSE or CrossEntropyLoss
-              device: str specifying cuda or cpu
-              data_path: dir/file of data set to use in pytorch Dataset class
-              loader_params: parameters for pytorch dataloaders
-              file: (default=None) dir/file to store stats in
-              scheduler: (default=None) pytorch learning rate scheduler object
-              epochs: (default=100) Max epochs of training to perform
-              early_stop: (default=False) Allows early stopping, such as when loss plateaus during training  '''
+    def __init__(self,model,optimizer,criterion,device,data_path,loader_params,file=None,scheduler=None,epochs=100,early_stop=True):
+        '''ARGS: model: class object of the pytorch model to train
+        optimizer: pytorch optim object for the eoptimization algorithm to use (Ex: SDG, AdamW)
+        criterion: pytorch loss function object such as MSE or CrossEntropyLoss
+        device: str specifying cuda or cpu
+        data_path: dir/file of data set to use in pytorch Dataset class
+        loader_params: parameters for pytorch dataloaders
+        file: (default=None) dir/file to store stats in
+        scheduler: (default=None) pytorch learning rate scheduler object
+        epochs: (default=100) Max epochs of training to perform
+        early_stop: (default=False) Allows early stopping, such as when loss plateaus during training  '''
         self.model = model.to(device)
         self.optimizer = optimizer
         self.criterion = criterion
@@ -46,9 +45,23 @@ class Trainer():
         train_dataset = SEMG_Dataset(data_path,'train',0)
         val_dataset = SEMG_Dataset(data_path,'val',0)
         test_dataset = SEMG_Dataset(data_path,'test',0)
+
         self.data_loaders = {'train':data.DataLoader(train_dataset,**loader_params),
                               'val':data.DataLoader(val_dataset,batch_size=loader_params['batch_size'], shuffle=False,num_workers=loader_params['num_workers']),
                               'test':data.DataLoader(test_dataset,batch_size=loader_params['batch_size'], shuffle=False,num_workers=loader_params['num_workers'])}
+
+        # print(train_dataset.__getitem__(0))
+        # print("\n")
+        # print(train_dataset.__getitem__(1))
+        # print("\n")
+        # print(train_dataset.__getitem__(2))
+        # print("\n")
+        # print(train_dataset.__getitem__(3))
+        # print("\n")
+        # print(train_dataset.__getitem__(4))
+        # print("\n")
+        # print(train_dataset.__getitem__(5))
+        
         self.data_lens = {'train':len(train_dataset),'val':len(val_dataset),'test':len(test_dataset)}
 
         self.stats = {'train':{'loss': float('+inf'),
@@ -78,6 +91,7 @@ class Trainer():
         cor_classify = 0.0
         i = 0
         for input,label in self.data_loaders[phase]:
+   
             if phase == 'train':
                 self.model.train()
                 torch.set_grad_enabled(True)
@@ -88,14 +102,18 @@ class Trainer():
             input = input.to(self.device)
             label = label.to(self.device)
             output = self.model(input)
-            loss = self.criterion(output,torch.argmax(label,dim=1))
+            # loss = self.criterion(output,torch.argmax(label,dim=1))
+            loss = self.criterion(output,label.float()) # for MSE
+            # print('EPOCH '+str(i)+" Loss: {}".format(loss.item()))
             running_loss += loss.item()
+            # print('EPOCH '+str(i)+" Running Loss: {}".format(running_loss))
             if phase == 'train':
                 loss.backward()
                 self.optimizer.step()
             #Does prediction == actual class?
             cor_classify += (torch.argmax(output,dim=1) == torch.argmax(label,dim=1)).sum().item()
             i+=1
+        # print("One Epoch Running Loss: {}".format(running_loss))
         return running_loss, cor_classify
 
 
@@ -110,10 +128,14 @@ class Trainer():
         self.loss_cnt = 0
         for epoch in range(1,self.max_epochs+1):
             # Run epoch
+            # print("ONE EPOCH INPUT", input)
+            # print("ONE EPOCH LABEL", label)
+            # print("ONE EPOCH DATA LOADERS", self.data_loaders[phase])
             e_loss, e_classify = self.one_epoch('train')
             e_loss /= self.data_lens['train']
             e_acc = (e_classify/self.data_lens['train'])*100
             # Save stats
+            # print('EPOCH '+str(epoch)+" Loss: {}".format(e_loss))
             self.loss_hist['train'].append(e_loss)
             self.acc_hist['train'].append(e_acc)
             if val_train:
@@ -124,12 +146,12 @@ class Trainer():
                 Useful check if updating properly as well'''
                 if abs(e_loss - prev_loss) < 1e-8:
                     self.loss_cnt += 1
+                    # print("eearly stop")
                 else:
                     self.loss_cnt = 0
                 if self.loss_cnt > 10: break
                 prev_loss = e_loss
             self.wt_hist['train'].append(copy.deepcopy(self.model.state_dict()))
-
             self.progress_bar(epoch)
 
         print('\n')
@@ -164,7 +186,6 @@ class Trainer():
             else:
                 self.model.load_state_dict(self.stats['val']['model_wt'])
             set = 'test'
-
         test_loss, test_correct = self.one_epoch(set)
         test_loss /= self.data_lens[set]
         test_acc = (test_correct/self.data_lens[set])*100
@@ -223,7 +244,7 @@ class Trainer():
         plt.close('all')
 
     def progress_bar(self,cur):
-         '''Displays progress bar
+        '''Displays progress bar
         ARGS: cur: number of items (epochs in this case) completed'''
         bar_len = 25
         percent = cur/self.max_epochs
@@ -232,7 +253,8 @@ class Trainer():
 
         print('\r'+bar,end='')
 
-
+### CTRL B AND D BEFORE LEAVING
+## tmux attach-session -t param_tuning or decay_test
 def hyperparam_selection(save_md):
     '''Function used for tuning hyperparamters of the model (learning rate etc..). Main feature is the for loop that iterates
     through a series of options for each hyperparmeter. Note due to time and memory constraints, not all hyperparameters are
@@ -240,53 +262,54 @@ def hyperparam_selection(save_md):
     hyperparamters.
     ARGS: save_md: (Boolean) Whether to save the pytorch model and plots or not'''
     ## Initialize model
-    model = Network_XL(7)
+    model = Network_enhanced(7)
 
     ## Initialize hyperparameters and supporting functions
     learning_rate = 0.2
-    optimizer = optim.SGD(model.parameters(),lr=learning_rate)
-    criterion = nn.MSELoss(reduction='mean')
+    optimizer = optim.AdamW(model.parameters(),lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
     scheduler = lr_scheduler.StepLR(optimizer,step_size=25,gamma=0.1)
 
     ## Initialize datasets path and dataloader parameters
     dir = 'nina_data/'
-    file = 'all_7C_data_3'
+    file = 'all_data_combined_2'
     path = dir+file
-    params = {'batch_size': 100, 'shuffle': True,'num_workers': 4}
+    params = {'batch_size': 1000, 'shuffle': True,'num_workers': 4}
 
     # Initialize network trainer class
 
     since = time.time()
-    f = open(path+'_stats_decay.txt','w')
+    f = open(path+'_stats_decay_lower_lr.txt','w')
     og_wts = copy.deepcopy(model.state_dict())
     rates = np.logspace(-2.0,-4.0,20)
-    mom = np.linspace(0.9,0.99,10)
+    # mom = np.linspace(0.9,0.99,10)
     decay = np.logspace(-1,-4,20)
-    m = mom[1]
-    lr = rates[10] # for adamw
-    dec = decay[2] # for adamw
+    # m = mom[1]
+    # lr = rates[10] # for adamw , 0.000885866790410083
+    lr=rates[12] ## lower rate, 0.000545559478116852
+    # lr = rates[9] ## Higher rate, 0.0011288378916846896
+    # dec = decay[2] # for adamw
     print('\nTrain model with AdamW')
     f.write('\nTrain model with AdamW\n')
-    count = 0
     all_tl = []
     f.write('Learning Rate: {}\n'.format(lr))
     for dec in decay:
         model.load_state_dict(og_wts)
-        optimizer = optim.AdamW(model.parameters(),lr=lr,weight_decay=dec)
+        optimizer = optim.AdamW(model.parameters(),lr=lr,weight_decay=dec)    
+        device='cuda' ############# CHANGE TO CUDA WHEN ON SSH #########
         nt = Trainer(model,optimizer,criterion,device,path,params,f,epochs=500)
         print('\nTrain model with decay: {}'.format(dec))
         f.write('Weight Decay: {}\n'.format(dec))
 
-
         ## Train and test network
         nt.train(val_train=True)
         tl, ta = nt.test(use_best_wt=True, epoch=1)
+        all_tl.append(tl)
         if save_md:
-            torch.save(nt.wt_hist['val'][np.argmin(nt.loss_hist['val'])],path+'_adamw_best.pt')
+            torch.save(nt.wt_hist['val'][np.argmin(nt.loss_hist['val'])],path+'_adamw_best_lower_lr.pt')
 
-        plot_path = file+'_adamw_decay'
+        plot_path = file+'_adamw_decay_lower_lr'
         nt.plot_loss(plot_path,save_md)
-        count += 1
     print("Best test: {}, with loss: {:.8f}. Therefore best weight_decay is {}".format(np.argmin(all_tl),np.min(all_tl),decay[np.argmin(all_tl)]))
     f.write("Best test: {}, with loss: {:.8f}. Therefore best weight_decay is {}".format(np.argmin(all_tl),np.min(all_tl),decay[np.argmin(all_tl)]))
 
@@ -301,19 +324,18 @@ def best_model_params(model,path):
           path: path to directory/file of dataset
           device: specifices cuda or cpu
     RETURNS: nt: Trainer class object '''
-    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('Device: {}'.format(device))
     params = {'batch_size': 1000, 'shuffle': True,'num_workers': 4}
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
+    criterion=nn.MSELoss(reduction="mean")
     rates = np.logspace(-2.0,-4.0,20)
     decay = np.logspace(-1,-4,20)
-    lr = rates[10]
-    dec = decay[2]
+    lr = rates[10] # Tried 5, 8, 10, 10
+    dec = decay[2] # Tried 16, 16, 2, 6
     optimizer = optim.AdamW(model.parameters(),lr=lr,weight_decay=dec)
     nt = Trainer(model,optimizer,criterion,device,path,params,epochs=100)
     return nt
-
-
 
 def main():
     '''Generates model class object and Trainer class object wth best parameters, then trains and tests the model.
@@ -337,25 +359,27 @@ def main():
         print("Saving model")
 
     dir = 'nina_data/'
-    file = 'all_7C_data_comb'
+    file = 'all_data_combined_argtest1'
     path = dir+file
     # Initialize model and Trainer
     model = Network_XL(7)
     net = best_model_params(model,path)
+    # hyperparam_selection(save_md)
     net.max_epochs = 500
+    net.early_stop=True
 
     ## Train and test network
     if not test_only:
         net.train(val_train=True)
     else:
-        model_path = 'myo_rec_data/win_JRS_7C_2_tran3'
-        nt.stats['val']['model_wt'] = torch.load(model_path+'.pt',map_location=torch.device('cpu'))
+        model_path = 'nina_data/combined_transfer_data_XL'
+        net.stats['val']['model_wt'] = torch.load(model_path+'.pt',map_location=torch.device('cpu'))
 
     tl, ta = net.test(use_best_wt=True, epoch=1)
     if save_md:
-        torch.save(net.wt_hist['val'][np.argmin(net.loss_hist['val'])],path+'_XL_cross.pt')
+        torch.save(net.wt_hist['val'][np.argmin(net.loss_hist['val'])],path+'_XL.pt')
 
-    plot_path = file+'_XL_cross'
+    plot_path = file+'_XL'
     net.plot_loss(plot_path,save_md)
 
 if __name__ == '__main__':

@@ -54,7 +54,7 @@ class SEMG_Dataset(data.Dataset):
 
 
 class GenData():
-    def __init__(self,exercises, gestures):
+    def __init__(self,exercises=None, gestures=None):
         self.exercises = exercises
         self.gestures = gestures
         self.remapped_gestures = []
@@ -137,7 +137,7 @@ class GenData():
         val_set0=set(vals[0])
         val_set1=set(vals[1])
 
-        for i in range(1,3):
+        for i in range(1,11):
             # print('Starting file: S'+str(i)+'_'+keys[0]+'_A1.mat')
             print('Starting files for sample S'+str(i)+'')
             x = loadmat('ninapro_data/s'+str(i)+'/S'+str(i)+'_'+keys[0]+'_A1.mat') #Exercise 1. 12 hand gestures included gestures of interest, USING E3 NOW FOR GRASPS
@@ -176,8 +176,8 @@ class GenData():
         if len(duplicates)>0:
             for index,k in enumerate(duplicates):
                 print("Found duplicate gesture values across exercises - remapped exercise {} gesture number {} to {}".format(str(key_list[1]),k,self.remapped_gestures[index]))
-        all_emg_path = 'nina_data/combined_emg_data_argtest3.csv'
-        all_ges_path = 'nina_data/combined_gest_data_argtest3.csv'
+        all_emg_path = 'nina_data/combined_emg_data_argtest1.csv'
+        all_ges_path = 'nina_data/combined_gest_data_argtest1.csv'
         with open(all_emg_path,mode='w') as comb_emg, open(all_ges_path,mode='w') as comb_ges:
             emg_writer = csv.writer(comb_emg, delimiter=',')
             emg_gesture_writer = csv.writer(comb_ges, delimiter=',')
@@ -196,8 +196,8 @@ class GenData():
         gesture_list = np.unique(all_vals)
      
         for index,label in enumerate(gesture_list):
-            remap= np.zeros(len(all_vals), dtype=int)
-            remap[index]+=1
+            remap= np.zeros(len(all_vals)+1, dtype=int)
+            remap[index+1]+=1
             if index>0:
                 remap[index-1] =0 
             label_pair = (label, remap)
@@ -243,9 +243,9 @@ if __name__ == '__main__':
             generate_data.genFromTwo()
 
         if win:
-            emg_data = np.genfromtxt('nina_data/combined_emg_data_argtest3.csv',delimiter=',')
-            restim = np.genfromtxt('nina_data/combined_gest_data_argtest3.csv',delimiter=',')
-            path = 'nina_data/all_data_combined_argtest' #### 2 is for new grasp data, 1 was with original finger gestures. 
+            emg_data = np.genfromtxt('nina_data/combined_emg_data_argtest1.csv',delimiter=',')
+            restim = np.genfromtxt('nina_data/combined_gest_data_argtest1.csv',delimiter=',')
+            path = 'nina_data/all_data_combined_argtest1' #### 2 is for new grasp data, 1 was with original finger gestures. 
             label_map = generate_data.createLabelMap()
             generate_data.window_data(np.abs(emg_data),restim,path,label_map,normalize=True)
     else:

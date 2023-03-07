@@ -11,6 +11,8 @@
         https://github.com/Alvipe/myo-raw
 
     Edited by Robert Schloen
+
+    Edited by Allan Garcia: https://github.com/allan-gc/myo_gestures
 '''
 
 

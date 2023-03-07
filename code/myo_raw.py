@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 	Original by dzhu
@@ -390,7 +390,7 @@ class MyoRaw(object):
         self.write_attr(0x19, b'\x01\x03\x01\x01\x01')
 
     def vibrate(self, length):
-        if length in xrange(1, 4):
+        if length in range(1, 4):
             ## first byte tells it to vibrate; purpose of second byte is unknown
             self.write_attr(0x19, pack('3B', 3, 1, length))
 
@@ -440,101 +440,117 @@ if __name__ == '__main__':
         scr = pygame.display.set_mode((w, h))
     print(str(HAVE_PYGAME))
     last_vals = None
+    dt = 0
+    s = 0
+    u = 0
+    prev_time = 0
+    t0 = 0
 
-    with open('myo_rec_data/raw_emg_JRS_7C_7.csv', mode='w') as emg_file, open('myo_rec_data/gesture_JRS_7C_7.csv',mode='w') as gesture_file:
-        emg_writer = csv.writer(emg_file, delimiter=',')
-        emg_gesture_writer = csv.writer(gesture_file, delimiter=',')
 
-        def plot(scr, vals):
-            DRAW_LINES = True
+    # with open('rec_data/raw_emg_data_10.csv', mode='w') as emg_file, open('rec_data/gesture_10.csv',mode='w') as gesture_file: ### MESSED UP rec_data/gesture_1.csv
+    #     emg_writer = csv.writer(emg_file, delimiter=',')
+    #     emg_gesture_writer = csv.writer(gesture_file, delimiter=',')
 
-            global last_vals
-            if last_vals is None:
-                last_vals = vals
-                return
+    def plot(scr, vals):
+        DRAW_LINES = True
 
-            D = 5
-            scr.scroll(-D)
-            scr.fill((0,0,0), (w - D, 0, w, h))
-            for i, (u, v) in enumerate(zip(last_vals, vals)):
-                if DRAW_LINES:
-                    pygame.draw.line(scr, (0,255,0),
-                                     (w - D, int(h/9 * (i+1 - u))),
-                                     (w, int(h/9 * (i+1 - v))))
-                    pygame.draw.line(scr, (255,255,255),
-                                     (w - D, int(h/9 * (i+1))),
-                                     (w, int(h/9 * (i+1))))
-                else:
-                    c = int(255 * max(0, min(1, v)))
-                    scr.fill((c, c, c), (w - D, i * h / 8, D, (i + 1) * h / 8 - i * h / 8));
-
-            pygame.display.flip()
+        global last_vals
+        if last_vals is None:
             last_vals = vals
+            return
 
-        m = MyoRaw(sys.argv[1] if len(sys.argv) >= 2 else None)
-
-        def proc_emg(emg, moving, times=[]):
-            '''Plot emg recording in realtime for visualization and write gesture class  number according to key presses during the
-            recording'''
-            if HAVE_PYGAME:
-                ## update pygame display
-                plot(scr, [e / 500. for e in emg]) # NEED TO BE ON THIS PLOT WINDOW FOR THE KEY PRESS TO WORK!!!!!!!!
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_1]: #element will be 1
-                    print('1')
-                    emg_gesture_writer.writerow((1,))
-
-                elif keys[pygame.K_2]: #element will be 2
-                    print('2')
-                    emg_gesture_writer.writerow((2,))
-
-                elif keys[pygame.K_3]: #element will be 3
-                    print('3')
-                    emg_gesture_writer.writerow((3,))
-
-                elif keys[pygame.K_4]: #element will be 4
-                    print('4')
-                    emg_gesture_writer.writerow((4,))
-
-                elif keys[pygame.K_5]: #element will be 5
-                    print('5')
-                    emg_gesture_writer.writerow((5,))
-                elif keys[pygame.K_6]: #element will be 6
-                    print('6')
-                    emg_gesture_writer.writerow((6,))
-                else:
-                    emg_gesture_writer.writerow((0,))
-
-                emg_writer.writerow(emg)
-                pygame.event.pump()
-
+        D = 5
+        scr.scroll(-D)
+        scr.fill((0,0,0), (w - D, 0, w, h))
+        for i, (u, v) in enumerate(zip(last_vals, vals)):
+            if DRAW_LINES:
+                pygame.draw.line(scr, (0,255,0),
+                                    (w - D, int(h/9 * (i+1 - u))),
+                                    (w, int(h/9 * (i+1 - v))))
+                pygame.draw.line(scr, (255,255,255),
+                                    (w - D, int(h/9 * (i+1))),
+                                    (w, int(h/9 * (i+1))))
             else:
-                print(emg)
+                c = int(255* max(0, min(1, v)))
+                scr.fill((c, c, c), (w - D, i * h / 8, D, (i + 1) * h / 8 - i * h / 8))
 
-            ## print framerate of received data
-            times.append(time.time())
-            if len(times) > 20:
-                # print((len(times) - 1) / (times[-1] - times[0]))
-                times.pop(0)
+        pygame.display.flip()
+        last_vals = vals
+
+    m = MyoRaw(sys.argv[1] if len(sys.argv) >= 2 else None)
+
+    def proc_emg(emg, moving, times=[]):
+        '''Plot emg recording in realtime for visualization and write gesture class  number according to key presses during the
+        recording'''
+        if HAVE_PYGAME:
+            ## update pygame display
+            plot(scr, [e / 500. for e in emg]) # NEED TO BE ON THIS PLOT WINDOW FOR THE KEY PRESS TO WORK!!!!!!!!
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_1]: #element will be 1
+                print('1')
+                emg_gesture_writer.writerow((1,))
+
+            elif keys[pygame.K_2]: #element will be 2
+                print('2')
+                emg_gesture_writer.writerow((2,))
+
+            elif keys[pygame.K_3]: #element will be 3
+                print('3')
+                emg_gesture_writer.writerow((3,))
+
+            elif keys[pygame.K_4]: #element will be 4
+                print('4')
+                emg_gesture_writer.writerow((4,))
+
+            elif keys[pygame.K_5]: #element will be 5
+                print('5')
+                emg_gesture_writer.writerow((5,))
+            elif keys[pygame.K_6]: #element will be 6
+                print('6')
+                emg_gesture_writer.writerow((6,))
+            else:
+                emg_gesture_writer.writerow((0,))
+
+            emg_writer.writerow(emg)
+            pygame.event.pump()
+
+        else:
+            print(emg)
+
+        ## print framerate of received data
+        times.append(time.time())
+        if len(times) > 20:
+            # print((len(times) - 1) / (times[-1] - times[0]))
+            times.pop(0)
 
 
-        m.add_emg_handler(proc_emg)
-        m.connect()
+    def proc_imu(quat, acc, gyro):
+        # print((gyro[1]/(16.0*60.0)))
+        # plot(scr, [gyro[1]/(16.0*60.0)]) 
 
-        m.add_arm_handler(lambda arm, xdir: print('arm', arm, 'xdir', xdir))
-        m.add_pose_handler(lambda p: print('pose', p))
+        print((acc[1]/(2048.0)))
+        plot(scr, [acc[1]/(2048.0)]) 
+        # plot(scr, [e / 2048.0 for e in acc]) 
 
-        try:
-            while True:
-                m.run(1)
+        
+    # m.add_emg_handler(proc_emg)
+    m.add_imu_handler(proc_imu)
+    m.connect()
 
-                if HAVE_PYGAME:
-                    for ev in pygame.event.get():
-                        if ev.type == QUIT or (ev.type == KEYDOWN and ev.unicode == 'q'):
-                             raise KeyboardInterrupt()
+    m.add_arm_handler(lambda arm, xdir: print('arm', arm, 'xdir', xdir))
+    m.add_pose_handler(lambda p: print('pose', p))
 
-        except KeyboardInterrupt:
-             pass
-        finally:
-             m.disconnect()
-             print()
+    try:
+        while True:
+            m.run(1)
+
+            if HAVE_PYGAME:
+                for ev in pygame.event.get():
+                    if ev.type == QUIT or (ev.type == KEYDOWN and ev.unicode == 'q'):
+                            raise KeyboardInterrupt()
+
+    except KeyboardInterrupt:
+            pass
+    finally:
+            m.disconnect()
+            print()

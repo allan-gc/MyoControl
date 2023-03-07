@@ -49,18 +49,6 @@ class Trainer():
         self.data_loaders = {'train':data.DataLoader(train_dataset,**loader_params),
                               'val':data.DataLoader(val_dataset,batch_size=loader_params['batch_size'], shuffle=False,num_workers=loader_params['num_workers']),
                               'test':data.DataLoader(test_dataset,batch_size=loader_params['batch_size'], shuffle=False,num_workers=loader_params['num_workers'])}
-
-        # print(train_dataset.__getitem__(0))
-        # print("\n")
-        # print(train_dataset.__getitem__(1))
-        # print("\n")
-        # print(train_dataset.__getitem__(2))
-        # print("\n")
-        # print(train_dataset.__getitem__(3))
-        # print("\n")
-        # print(train_dataset.__getitem__(4))
-        # print("\n")
-        # print(train_dataset.__getitem__(5))
         
         self.data_lens = {'train':len(train_dataset),'val':len(val_dataset),'test':len(test_dataset)}
 
@@ -75,8 +63,6 @@ class Trainer():
         self.loss_hist = {'train':[] ,'val':[]}
         self.acc_hist = {'train':[] ,'val':[]}
         self.wt_hist = {'train':[] ,'val':[]}
-
-
 
 
     def one_epoch(self,phase):
@@ -102,18 +88,14 @@ class Trainer():
             input = input.to(self.device)
             label = label.to(self.device)
             output = self.model(input)
-            # loss = self.criterion(output,torch.argmax(label,dim=1))
             loss = self.criterion(output,label.float()) # for MSE
-            # print('EPOCH '+str(i)+" Loss: {}".format(loss.item()))
             running_loss += loss.item()
-            # print('EPOCH '+str(i)+" Running Loss: {}".format(running_loss))
             if phase == 'train':
                 loss.backward()
                 self.optimizer.step()
             #Does prediction == actual class?
             cor_classify += (torch.argmax(output,dim=1) == torch.argmax(label,dim=1)).sum().item()
             i+=1
-        # print("One Epoch Running Loss: {}".format(running_loss))
         return running_loss, cor_classify
 
 
@@ -128,25 +110,19 @@ class Trainer():
         self.loss_cnt = 0
         for epoch in range(1,self.max_epochs+1):
             # Run epoch
-            # print("ONE EPOCH INPUT", input)
-            # print("ONE EPOCH LABEL", label)
-            # print("ONE EPOCH DATA LOADERS", self.data_loaders[phase])
             e_loss, e_classify = self.one_epoch('train')
             e_loss /= self.data_lens['train']
             e_acc = (e_classify/self.data_lens['train'])*100
             # Save stats
-            # print('EPOCH '+str(epoch)+" Loss: {}".format(e_loss))
             self.loss_hist['train'].append(e_loss)
             self.acc_hist['train'].append(e_acc)
             if val_train:
                 t_loss, t_acc = self.test(False,epoch)
-
             if self.early_stop:
                 '''Add early stopping: if change in loss less than ... x times, stop.
                 Useful check if updating properly as well'''
                 if abs(e_loss - prev_loss) < 1e-8:
                     self.loss_cnt += 1
-                    # print("eearly stop")
                 else:
                     self.loss_cnt = 0
                 if self.loss_cnt > 10: break
@@ -331,8 +307,8 @@ def best_model_params(model,path):
     criterion=nn.MSELoss(reduction="mean")
     rates = np.logspace(-2.0,-4.0,20)
     decay = np.logspace(-1,-4,20)
-    lr = rates[10] # Tried 5, 8, 10, 10
-    dec = decay[2] # Tried 16, 16, 2, 6
+    lr = rates[10] 
+    dec = decay[2] 
     optimizer = optim.AdamW(model.parameters(),lr=lr,weight_decay=dec)
     nt = Trainer(model,optimizer,criterion,device,path,params,epochs=100)
     return nt

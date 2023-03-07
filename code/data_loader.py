@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-### Data Loader file for Myo Armband Gesture Data - Edited By Allan Garcia
+'''
+Original By Robert Shcloen: https://github.com/rschloen/semg_control
+Edited By Allan Garcia: https://github.com/allan-gc/myo_gestures
+
+'''
+
 
 
 import torch
@@ -11,9 +16,6 @@ from statistics import mode
 import csv
 import argparse, sys
 import json
-
-
-
 
 class SEMG_Dataset(data.Dataset):
     '''Custom pytorch dataset class, used to iterate through dataset when used with DataLoaders'''

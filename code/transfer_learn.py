@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+
+'''
+Original By Robert Shcloen: https://github.com/rschloen/semg_control
+Edited By Allan Garcia: https://github.com/allan-gc/myo_gestures
+
+'''
+
+
 from __future__ import print_function
 
 import torch
@@ -58,17 +67,16 @@ if __name__ == '__main__':
         path = 'data_'
         emg_array = np.zeros((1,8))
         gesture_array = np.array([])
-        count = 1
+        count = 0
         for file in os.listdir("rec_data/"): #count number of emg data files in folder
             if file.endswith(".csv"):
                 count += .5
                 print("COUNT", count)
-        # count -= 1
         print("COUNT AFTER LOOP", count)
-        first_activity =  most_active('rec_data/raw_emg_'+path+'2.csv')
+        first_activity =  most_active('rec_data/raw_emg_'+path+'1.csv')
         print('Target channel {}'.format(first_activity))
 
-        for i in range(int(count-1)): # loop through data files in folder to build dataset containing all of them
+        for i in range(int(count)): # loop through data files in folder to build dataset containing all of them
             print("I IN LOOP", i)
             emg_array = np.zeros((1,8))
             gesture_array = np.array([])
@@ -81,19 +89,19 @@ if __name__ == '__main__':
             gesture_array = np.append(gesture_array,np.loadtxt('rec_data/gesture_{}.csv'.format(i+1),delimiter=','))
 
         emg_array = np.delete(emg_array,0,0) #first row was initialized with zeros, needs to be removed
-        new_path = 'nina_data/combined_transfer_data_argtest' #file to store new combined dataset
-        with open('nina_data/combined_transfer_data_argtest_stats.txt','w') as real_time:
+        new_path = 'nina_data/combined_transfer_data_argtest1' #file to store new combined dataset
+        with open('nina_data/combined_transfer_data_argtest1_stats.txt','w') as real_time:
             stat_writer = csv.writer(real_time, delimiter=',')
             mean_emg = np.mean(emg_array)
             std_emg = np.std(emg_array)
             stat_writer.writerow((mean_emg,std_emg))
-        label_map = [(1,np.array([0,1,0,0,0,0,0])),(2,np.array([0,0,1,0,0,0,0])),(3,np.array([0,0,0,1,0,0,0])), (4,np.array([0,0,0,0,1,0,0])),(5,np.array([0,0,0,0,0,1,0]))]
+        label_map = [(1,np.array([0,1,0,0,0,0,0])),(2,np.array([0,0,1,0,0,0,0])),(3,np.array([0,0,0,1,0,0,0])), (4,np.array([0,0,0,0,1,0,0])),(5,np.array([0,0,0,0,0,1,0])),(6,np.array([0,0,0,0,0,0,1]))]
         gen_transfer_data.window_data(emg_array,gesture_array.T.astype(int),new_path,label_map)
 
     else:
         WT_PATH = 'nina_data/all_data_combined_argtest1_XL' # file with model state dictionary
         PATH = 'nina_data/all_data_combined_argtest1' # file with pretraining data
-        new_PATH = 'nina_data/combined_transfer_data_argtest' # file with new data for transfer learning
+        new_PATH = 'nina_data/combined_transfer_data_argtest1' # file with new data for transfer learning
         model = Network_XL(7)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -130,7 +138,7 @@ if __name__ == '__main__':
         ft_nt.train(val_train=True)
         tl, ta = ft_nt.test(use_best_wt=True, epoch=1)
         torch.save(ft_nt.wt_hist['val'][np.argmin(ft_nt.loss_hist['val'])],new_PATH+'_XL.pt') ### TEST THIS PT FILE, HAS NO REC_DATA1 FOR FINGER GEST
-        plot_path = 'combined_transfer_data_argtest_XL' 
+        plot_path = 'combined_transfer_data_argtest1_XL' 
         ft_nt.plot_loss(plot_path,True)
 
         '''For PNN (incomplete)'''

@@ -88,6 +88,7 @@ class Trainer():
             input = input.to(self.device)
             label = label.to(self.device)
             output = self.model(input)
+    
             loss = self.criterion(output,label.float()) # for MSE
             running_loss += loss.item()
             if phase == 'train':
@@ -320,6 +321,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test','-t',help='((True or true or t)/False) Only test model using best weights')
     parser.add_argument('--save','-s',help='((True or true or t)/False) Save the best model weights and generated plots')
+    parser.add_argument('--classes','-c',type=int)
     args=parser.parse_args()
 
     if args.test == 'True' or args.test == 'true' or args.test == 't':
@@ -335,10 +337,10 @@ def main():
         print("Saving model")
 
     dir = 'nina_data/'
-    file = 'all_data_combined_argtest1'
+    file = 'all_data_combined_FINAL'
     path = dir+file
     # Initialize model and Trainer
-    model = Network_XL(7)
+    model = Network_XL(args.classes)
     net = best_model_params(model,path)
     # hyperparam_selection(save_md)
     net.max_epochs = 500

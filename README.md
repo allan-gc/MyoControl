@@ -1,4 +1,15 @@
 # Surface Electromyograph (SEMG) Control for a robotic hand
+
+## Allan Garcia
+After using this package I have made some changes to the ways that files take in data so that they are slightly easier to use and keep track of. These changes are not reflected on the original Github of this package, and everything after this section of the README is from the original package. 
+
+In data_loader.py, I have changed the file to have the GenData() class that handles the generation of the data you desire to train from the Ninapro dataset. You can pass in which gestures from which exercises you want, although it is currently limited to only generating from any two exercises. To use data_loader.py in this manner, run `./data_loader.py -g t -gestures '{"E1": [0,2,3], "E2": [4,5]}'` in the command lines. The information after the -gestures argument is a dictionary of what gestures from which exercises you want to compile data for. In this example, data_loader will go through the Ninapro files and collect the data for gestures 0,2 and 3 from exercise 1 (E1) and for gestures 4 and 5 from exercise 2 (E2). 
+
+In train_net.py, you now have to pass in the number of classes or gestures you have chosen to train. For instance, if we generated data using the command from above we would be getting ready to train on five gestures. As such to run train_net, run `./train_net.py -s t -c 5`, where the -c argument (for classes) is followed by the number of classes you will be training. 
+
+This is the end of the changes made by me, everything beyond this point is from the original package.
+
+
 ## Robert Schloen
 
 The goal of this project was to achieve accurate, real time prediction of hand gestures using surface electromyography (SEMG) and deep learning with transfer learning. Transfer learning is the concept of using the relationships learned from one problem on a similar problem. In this case, I am using transfer learning to take the relationships learned from one data set of EMG recordings and applying it to a new smaller data set to reduce the training time and effort. Using this method, a model more specific to an individual can be quickly trained from a relatively small amount of data.

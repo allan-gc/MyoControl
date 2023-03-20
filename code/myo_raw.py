@@ -442,14 +442,8 @@ if __name__ == '__main__':
         scr = pygame.display.set_mode((w, h))
     print(str(HAVE_PYGAME))
     last_vals = None
-    dt = 0
-    s = 0
-    u = 0
-    prev_time = 0
-    t0 = 0
 
-
-    # with open('rec_data/raw_emg_data_10.csv', mode='w') as emg_file, open('rec_data/gesture_10.csv',mode='w') as gesture_file: ### MESSED UP rec_data/gesture_1.csv
+    # with open('rec_data2/raw_emg_FINAL_9.csv', mode='w') as emg_file, open('rec_data2/gesture_9.csv',mode='w') as gesture_file: ### MESSED UP rec_data/gesture_1.csv
     #     emg_writer = csv.writer(emg_file, delimiter=',')
     #     emg_gesture_writer = csv.writer(gesture_file, delimiter=',')
 
@@ -473,7 +467,7 @@ if __name__ == '__main__':
                                     (w - D, int(h/9 * (i+1))),
                                     (w, int(h/9 * (i+1))))
             else:
-                c = int(255* max(0, min(1, v)))
+                c = int(255 * max(0, min(1, v)))
                 scr.fill((c, c, c), (w - D, i * h / 8, D, (i + 1) * h / 8 - i * h / 8))
 
         pygame.display.flip()
@@ -525,16 +519,15 @@ if __name__ == '__main__':
             # print((len(times) - 1) / (times[-1] - times[0]))
             times.pop(0)
 
-
     def proc_imu(quat, acc, gyro):
-        # print((gyro[1]/(16.0*60.0)))
-        # plot(scr, [gyro[1]/(16.0*60.0)]) 
+        # print((gyro[0]/(16.0*60.0)))
+        # plot(scr, [gyro[0]/(16.0*60.0)]) 
 
-        print((acc[1]/(2048.0)))
-        plot(scr, [acc[1]/(2048.0)]) 
+        print(((2.0*gyro[0]/(2048.0))))
+        plot(scr, [2.0*gyro[0]/(2048.0)]) 
         # plot(scr, [e / 2048.0 for e in acc]) 
 
-        
+
     # m.add_emg_handler(proc_emg)
     m.add_imu_handler(proc_imu)
     m.connect()
@@ -556,3 +549,15 @@ if __name__ == '__main__':
     finally:
             m.disconnect()
             print()
+
+
+
+
+
+  # def proc_imu(quat, acc, gyro):
+        #     print((gyro[0]/(16.0*60.0)))
+        #     plot(scr, [gyro[0]/(16.0*60.0)]) 
+
+            # print(((acc[0]/(2048.0))))
+            # plot(scr, [acc[0]/(2048.0)]) 
+            # plot(scr, [e / 2048.0 for e in acc]) 

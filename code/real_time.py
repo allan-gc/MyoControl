@@ -8,8 +8,6 @@ from train_net import Trainer, best_model_params
 import time, sys, copy, csv, argparse
 from statistics import mode
 from transfer_learn import circle_shift, most_active
-from lstm_emg import LSTM_Net
-
 
 
 class RealTime():
@@ -20,7 +18,9 @@ class RealTime():
             goal: Most active channel of first recording of dataset. Channel new data is calibrated with respect to."""
     def __init__(self,model,m,start=0,goal=0):
         super(RealTime, self).__init__()
-        self.mean_emg,self.std_emg = np.loadtxt('myo_rec_data/win_JRS_7C_comb7_shifted_stats.txt',delimiter=',')
+        # self.mean_emg,self.std_emg = np.loadtxt('nina_data/combined_transfer_data_argtest1_stats.txt',delimiter=',')  ## combined_transfer_data_argtest_stats.txt FOR ARGTEST, nina_data/combined_transfer_data_stats.txt ORIGINAL THAT WORKED
+        # self.mean_emg,self.std_emg = np.loadtxt('nina_data/all_data_combined_FINAL_stats.txt',delimiter=',') 
+        self.mean_emg,self.std_emg = np.loadtxt('nina_data/combined_transfer_data_FINAL_BACKUP1_stats.txt',delimiter=',') 
         self.model = model
         self.emg_array = []
         self.pred_array = []
@@ -41,6 +41,7 @@ class RealTime():
         except KeyboardInterrupt:
             print('\n')
             self.myo.disconnect()
+            print("Disconnected")
 
     def proc_emg(self,emg, moving, times=[]):
         '''Takes sampled emg, shifts the channels per the calibration, and builds a 260ms (52 samples)
@@ -55,6 +56,7 @@ class RealTime():
             input = torch.Tensor(self.emg_array)
             input = input.view(1,1,input.shape[0],input.shape[1])
             pred = torch.argmax(self.model(input)).item() #prediction
+            # print(pred)
             self.pred_array.append(pred)
             if len(self.pred_array) == 10:
                 try:
@@ -86,6 +88,23 @@ class RealTime():
             print('\rPredicted Gesture: THUMB         ',end='')
         elif pred == 6:
             print('\rPredicted Gesture: FIST          ',end='')
+
+    def display_grasp_gest(self,pred):
+        '''Prints text corresponding to passed prediction (pred)'''
+        if pred == 0:
+            print('\rPredicted Gesture: OPEN HAND       ',end='')
+        elif pred == 1:
+            print('\rPredicted Gesture: THUMB UP        ',end='')
+        elif pred == 2:
+            print('\rPredicted Gesture: FIST            ',end='')
+        elif pred == 3:
+            print('\rPredicted Gesture: POINT           ',end='')
+        elif pred == 4:
+            print('\rPredicted Gesture: LD  GRASP       ',end='')
+        elif pred == 5:
+            print('\rPredicted Gesture: PINCH GRASP     ',end='')
+      
+
 
 
     def calibrate_emg(self,emg,moving,times=[]):
@@ -122,8 +141,14 @@ if __name__ == '__main__':
 
     m = MyoRaw(None)
     model = Network_XL(7)
-    model_path = 'myo_rec_data/win_JRS_7C_comb7_shifted_XL_cross_tran_final2.pt'
-    path = 'myo_rec_data/win_JRS_7C_comb7_shifted'
+    # model_path = 'nina_data/combined_transfer_data_argtest1_XL.pt'  ## Best digit test was combined_transfer_data_XL3.pt, TEST:  combined_transfer_data_argtest_XL.pt
+    # path = 'nina_data/combined_transfer_data_XL3'
+    # model_path = 'nina_data/all_data_combined_FINAL_XL.pt'  ## Best digit test was combined_transfer_data_XL3.pt, TEST:  combined_transfer_data_argtest_XL.pt
+    # path = 'nina_data/all_data_combined_FINAL_XL'
+
+    model_path = 'nina_data/combined_transfer_data_FINAL_BACKUP1_XL.pt'  ## Best digit test was combined_transfer_data_XL3.pt, TEST:  combined_transfer_data_argtest_XL.pt
+    path = 'nina_data/combined_transfer_data_FINAL_BACKUP1_XL'
+
     try:
         start = int(args.start_channel)
     except:
@@ -131,7 +156,8 @@ if __name__ == '__main__':
 
     model.load_state_dict(torch.load(model_path,map_location='cpu'))
     model.eval()
-    first_activity = most_active('myo_rec_data/raw_emg_JRS_7C_1.csv') #should be 3
+    first_activity = 5 #should be 0 for DIGITS!!!!
+    # first_activity= most_active('rec_data2/raw_emg_FINAL_1.csv')
     rt = RealTime(model,m,start,first_activity)
     cal = input('Begin calibration recording? ')
     if cal == 'y':

@@ -56,6 +56,7 @@ def circle_shift(array,start,goal):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_data','-g',help='((True or true or t)/False) Generate data or train model with transfer learning')
+    parser.add_argument('--classes','-c',type=int)
     args=parser.parse_args()
     if args.gen_data == 'True' or args.gen_data == 'true' or args.gen_data == 't':
         gen_data = True
@@ -64,45 +65,48 @@ if __name__ == '__main__':
 
     if gen_data:
         gen_transfer_data = GenData()
-        path = 'data_'
+        path = 'FINAL_'
         emg_array = np.zeros((1,8))
         gesture_array = np.array([])
         count = 0
-        for file in os.listdir("rec_data/"): #count number of emg data files in folder
+        for file in os.listdir("rec_data2/"): #count number of emg data files in folder
             if file.endswith(".csv"):
-                count += .5
+                count += 0.5
                 print("COUNT", count)
         print("COUNT AFTER LOOP", count)
-        first_activity =  most_active('rec_data/raw_emg_'+path+'1.csv')
+        first_activity =  most_active('rec_data2/raw_emg_'+path+'1.csv')
         print('Target channel {}'.format(first_activity))
+
+        # count -= 1
 
         for i in range(int(count)): # loop through data files in folder to build dataset containing all of them
             print("I IN LOOP", i)
             emg_array = np.zeros((1,8))
             gesture_array = np.array([])
-            temp_arr = np.loadtxt('rec_data/raw_emg_'+path+'{}.csv'.format(i+1),delimiter=',')
-            print('rec_data/raw_emg_'+path+'{}.csv'.format(i+1))
+            temp_arr = np.loadtxt('rec_data2/raw_emg_'+path+'{}.csv'.format(i+1),delimiter=',')
+            print('rec_data2/raw_emg_'+path+'{}.csv'.format(i+1))
             active_chan = most_active(temp_arr)
             print('File {} most active channel {}'.format(i,active_chan))
             shifted_array = circle_shift(temp_arr,active_chan,first_activity)
             emg_array = np.vstack((emg_array,shifted_array))
-            gesture_array = np.append(gesture_array,np.loadtxt('rec_data/gesture_{}.csv'.format(i+1),delimiter=','))
+            gesture_array = np.append(gesture_array,np.loadtxt('rec_data2/gesture_{}.csv'.format(i+1),delimiter=','))
 
         emg_array = np.delete(emg_array,0,0) #first row was initialized with zeros, needs to be removed
-        new_path = 'nina_data/combined_transfer_data_argtest1' #file to store new combined dataset
-        with open('nina_data/combined_transfer_data_argtest1_stats.txt','w') as real_time:
+        new_path = 'nina_data/combined_transfer_data_FINAL_BACKUP1' #file to store new combined dataset
+        with open('nina_data/combined_transfer_data_FINAL_BACKUP1_stats.txt','w') as real_time:
             stat_writer = csv.writer(real_time, delimiter=',')
             mean_emg = np.mean(emg_array)
             std_emg = np.std(emg_array)
             stat_writer.writerow((mean_emg,std_emg))
-        label_map = [(1,np.array([0,1,0,0,0,0,0])),(2,np.array([0,0,1,0,0,0,0])),(3,np.array([0,0,0,1,0,0,0])), (4,np.array([0,0,0,0,1,0,0])),(5,np.array([0,0,0,0,0,1,0])),(6,np.array([0,0,0,0,0,0,1]))]
+        label_map = [(1,np.array([0, 1, 0, 0, 0, 0, 0])),(2,np.array([0,0,1,0,0,0,0])),(3,np.array([0,0,0,1,0,0,0])), (4,np.array([0,0,0,0,1,0,0])),(5,np.array([0,0,0,0,0,1,0])),(6,np.array([0,0,0,0,0,0,1]))]
         gen_transfer_data.window_data(emg_array,gesture_array.T.astype(int),new_path,label_map)
 
+#  [(1, array([0, 1, 0, 0, 0, 0, 0])), (3, array([0, 0, 1, 0, 0, 0, 0])), (5, array([0, 0, 0, 1, 0, 0, 0])), (7, array([0, 0, 0, 0, 1, 0, 0])), (12, array([0, 0, 0, 0, 0, 1, 0])), (30, array([0, 0, 0, 0, 0, 0, 1]))]
     else:
-        WT_PATH = 'nina_data/all_data_combined_argtest1_XL' # file with model state dictionary
-        PATH = 'nina_data/all_data_combined_argtest1' # file with pretraining data
-        new_PATH = 'nina_data/combined_transfer_data_argtest1' # file with new data for transfer learning
-        model = Network_XL(7)
+        WT_PATH = 'nina_data/all_data_combined_FINAL_BACKUP_XL' # file with model state dictionary
+        PATH = 'nina_data/all_data_combined_FINAL_BACKUP' # file with pretraining data
+        new_PATH = 'nina_data/combined_transfer_data_FINAL_BACKUP1' # file with new data for transfer learning
+        model = Network_XL(args.classes)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Test pretrained network
@@ -138,7 +142,7 @@ if __name__ == '__main__':
         ft_nt.train(val_train=True)
         tl, ta = ft_nt.test(use_best_wt=True, epoch=1)
         torch.save(ft_nt.wt_hist['val'][np.argmin(ft_nt.loss_hist['val'])],new_PATH+'_XL.pt') ### TEST THIS PT FILE, HAS NO REC_DATA1 FOR FINGER GEST
-        plot_path = 'combined_transfer_data_argtest1_XL' 
+        plot_path = 'combined_transfer_data_FINAL_BACKUP_XL' 
         ft_nt.plot_loss(plot_path,True)
 
         '''For PNN (incomplete)'''

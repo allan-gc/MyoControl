@@ -337,7 +337,7 @@ def main():
         print("Saving model")
 
     dir = 'nina_data/'
-    file = 'all_data_combined_FINAL'
+    file = 'all_data_combined_FINAL_BACKUP'
     path = dir+file
     # Initialize model and Trainer
     model = Network_XL(args.classes)
